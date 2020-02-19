@@ -18,6 +18,7 @@ public class MoneyLaundering
     private TransactionReader transactionReader;
     private int amountOfFilesTotal;
     private AtomicInteger amountOfFilesProcessed;
+    private ProcessThreadMoney[] arregloDeHilos;
 
     public MoneyLaundering()
     {
@@ -26,20 +27,49 @@ public class MoneyLaundering
         amountOfFilesProcessed = new AtomicInteger();
     }
 
-    public void processTransactionData()
-    {
+    public ProcessThreadMoney[] getHilos(){
+        return arregloDeHilos;
+    }
+
+    public void aumentarArchivosProcesados(){
+        amountOfFilesProcessed.incrementAndGet();
+    }
+
+    public void processTransactionData() {
         amountOfFilesProcessed.set(0);
         List<File> transactionFiles = getTransactionFileList();
+
+        int numHilos = 5;
+
         amountOfFilesTotal = transactionFiles.size();
-        for(File transactionFile : transactionFiles)
-        {            
-            List<Transaction> transactions = transactionReader.readTransactionsFromFile(transactionFile);
-            for(Transaction transaction : transactions)
-            {
-                transactionAnalyzer.addTransaction(transaction);
+        int inicio = 0;
+        int sumando = (int) Math.ceil((double) amountOfFilesTotal/numHilos);
+        int fin = sumando;
+        ProcessThreadMoney[] hilos = new ProcessThreadMoney[numHilos];
+        arregloDeHilos = hilos;
+        for(int i = 0; i<numHilos;i++){
+            ArrayList<File> temporal = new ArrayList<File>();
+            for(int i2 = inicio; i2<fin;i2++){
+                temporal.add(transactionFiles.get(i2));
             }
-            amountOfFilesProcessed.incrementAndGet();
+            hilos[i] = new ProcessThreadMoney(temporal,transactionReader,transactionAnalyzer,this);
+            hilos[i].start();
+            inicio = fin +1;
+            if (amountOfFilesTotal-fin < sumando){
+                fin = amountOfFilesTotal;
+            } else {
+                fin += sumando;
+            }
+
         }
+        for (ProcessThreadMoney hilo: hilos){
+            try {
+                hilo.join();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+
     }
 
     public List<String> getOffendingAccounts()
@@ -58,24 +88,41 @@ public class MoneyLaundering
         return csvFiles;
     }
 
-    public static void main(String[] args)
-    {
+    public static void main(String[] args) {
         MoneyLaundering moneyLaundering = new MoneyLaundering();
         Thread processingThread = new Thread(() -> moneyLaundering.processTransactionData());
         processingThread.start();
-        while(true)
-        {
+        boolean enterPresionado = true;
+        while(true){
             Scanner scanner = new Scanner(System.in);
             String line = scanner.nextLine();
-            if(line.contains("exit"))
+            if(line.contains("exit")) {
                 break;
-            String message = "Processed %d out of %d files.\nFound %d suspect accounts:\n%s";
-            List<String> offendingAccounts = moneyLaundering.getOffendingAccounts();
-            String suspectAccounts = offendingAccounts.stream().reduce("", (s1, s2)-> s1 + "\n"+s2);
-            message = String.format(message, moneyLaundering.amountOfFilesProcessed.get(), moneyLaundering.amountOfFilesTotal, offendingAccounts.size(), suspectAccounts);
-            System.out.println(message);
-        }
+            } else if (line.equals("") && enterPresionado){
+                for(ProcessThreadMoney hilo: moneyLaundering.getHilos()){
+                    hilo.pausarHilo();
+                }
+                moneyLaundering.imprimirMensaje();
+                enterPresionado = false;
+            } else if (line.equals("")){
+                enterPresionado = true;
+                for(ProcessThreadMoney hilo: moneyLaundering.getHilos()){
+                    hilo.reanudarHilo();
+                }
+            } else if (enterPresionado){
+                moneyLaundering.imprimirMensaje();
+            } else {
+                System.out.println("El programa esta pausado hasta que vuelvas a undir ENTER");
+            }
 
+        }
+    }
+    public void imprimirMensaje(){
+        String message = "Processed %d out of %d files.\nFound %d suspect accounts:\n%s";
+        List<String> offendingAccounts = getOffendingAccounts();
+        String suspectAccounts = offendingAccounts.stream().reduce("", (s1, s2)-> s1 + "\n"+s2);
+        message = String.format(message, amountOfFilesProcessed.get(), amountOfFilesTotal, offendingAccounts.size(), suspectAccounts);
+        System.out.println(message);
     }
 
 

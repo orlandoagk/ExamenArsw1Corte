@@ -21,9 +21,8 @@ public class TransactionReader {
 
     }
 
-    public List<Transaction> readTransactionsFromFile(File transactionFile)
-    {
-        ArrayList<Transaction> transactions = new ArrayList<>();
+    public List<Transaction> readTransactionsFromFile(File transactionFile){
+        ArrayList<Transaction> transactions = new ArrayList<Transaction>();
         int count = 0;
         try {
             CSVParser csvParser = CSVFormat.newFormat(',').parse(new InputStreamReader(new FileInputStream(transactionFile)));
