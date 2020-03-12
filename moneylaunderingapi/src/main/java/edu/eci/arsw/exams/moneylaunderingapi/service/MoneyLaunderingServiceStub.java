@@ -28,8 +28,10 @@ public class MoneyLaunderingServiceStub implements MoneyLaunderingService {
     @Override
     public SuspectAccount getAccountStatus(String accountId) throws SpringException {
         SuspectAccount suspectAccount = null;
+
         for (int i = 0; i<suspectAccounts.size();i++){
             if (suspectAccounts.get(i).accountId.equals(accountId)){
+
                 suspectAccount = suspectAccounts.get(i);
             }
         }

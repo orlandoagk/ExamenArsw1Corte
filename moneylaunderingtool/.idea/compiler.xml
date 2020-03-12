@@ -6,6 +6,7 @@
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
+        <module name="moneylaunderingtool" />
         <module name="2020-1-arsw-par1" />
       </profile>
     </annotationProcessing>

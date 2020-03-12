@@ -42,27 +42,26 @@ public class MoneyLaundering
         int numHilos = 5;
 
         amountOfFilesTotal = transactionFiles.size();
-        int inicio = 0;
-        int sumando = (int) Math.ceil((double) amountOfFilesTotal/numHilos);
-        int fin = sumando;
-        ProcessThreadMoney[] hilos = new ProcessThreadMoney[numHilos];
-        arregloDeHilos = hilos;
-        for(int i = 0; i<numHilos;i++){
-            ArrayList<File> temporal = new ArrayList<File>();
-            for(int i2 = inicio; i2<fin;i2++){
-                temporal.add(transactionFiles.get(i2));
-            }
-            hilos[i] = new ProcessThreadMoney(temporal,transactionReader,transactionAnalyzer,this);
-            hilos[i].start();
-            inicio = fin +1;
-            if (amountOfFilesTotal-fin < sumando){
-                fin = amountOfFilesTotal;
-            } else {
-                fin += sumando;
-            }
 
+        arregloDeHilos = new ProcessThreadMoney[numHilos];
+        for(int i = 0;i<numHilos;i++){
+            arregloDeHilos[i] = new ProcessThreadMoney(transactionReader,transactionAnalyzer,this);
         }
-        for (ProcessThreadMoney hilo: hilos){
+        int round = 0;
+
+        for (File f: transactionFiles){
+            arregloDeHilos[round].addFile(f);
+            if(round == numHilos-1){
+                round = 0;
+            } else {
+                round++;
+            }
+        }
+        for (ProcessThreadMoney hilo: arregloDeHilos){
+            hilo.start();
+        }
+
+        for (ProcessThreadMoney hilo: arregloDeHilos){
             try {
                 hilo.join();
             } catch (InterruptedException e) {

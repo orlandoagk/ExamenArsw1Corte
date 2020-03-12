@@ -13,8 +13,8 @@ public class ProcessThreadMoney extends Thread {
     MoneyLaundering main;
     boolean estaPausado;
     Mutex m;
-    public ProcessThreadMoney(ArrayList<File> archivos, TransactionReader lector, TransactionAnalyzer analizador, MoneyLaundering main){
-        this.archivos = archivos;
+    public ProcessThreadMoney(TransactionReader lector, TransactionAnalyzer analizador, MoneyLaundering main){
+        this.archivos = new ArrayList<File>();
         this.transactionReader = lector;
         transactionAnalyzer = analizador;
         this.main = main;
@@ -40,6 +40,10 @@ public class ProcessThreadMoney extends Thread {
             }
             main.aumentarArchivosProcesados();
         }
+    }
+
+    public void addFile(File f){
+        archivos.add(f);
     }
 
     public void pausarHilo(){
